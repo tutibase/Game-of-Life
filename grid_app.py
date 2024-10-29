@@ -3,6 +3,8 @@ from tkinter import simpledialog
 from constants import *
 from cellular_automaton import CellularAutomaton
 import copy
+import random
+
 
 class GridApp:
     """ Класс, отвечающий за всю графику в окне master """
@@ -23,32 +25,38 @@ class GridApp:
         self.is_paused = True
         # Задаем автомат
         self.auto = CellularAutomaton('00000011010011101100101100010000')
-        #self.auto = CellularAutomaton('10110010101010011111011100011110')
+        # self.auto = CellularAutomaton('10110010101010011111011100011110')
 
         # Создаем виджеты:
         # 1. холст для отрисовки поля
         self.canvas = tk.Canvas(master, width=self.grid_size * SQUARE_SIZE, height=self.grid_size * SQUARE_SIZE)
         self.canvas.pack()
 
-        # 2. рамка для кнопок
-        self.button_frame = tk.Frame(master)
-        self.button_frame.pack()
+        # 2. рамки для кнопок
+        self.button_frame1 = tk.Frame(master)
+        self.button_frame2 = tk.Frame(master)
+        self.button_frame1.pack()
+        self.button_frame2.pack()
 
         # 3. кнопка для изменения размеров сетки
-        self.resize_button = tk.Button(self.button_frame, text="Resize Grid", command=self.prompt_resize)
+        self.resize_button = tk.Button(self.button_frame1, text="Resize Grid", command=self.prompt_resize)
         self.resize_button.pack(side=tk.LEFT)
 
         # 4. кнопка инверсии поля
-        self.inversion_button = tk.Button(self.button_frame, text="Inverse All", command=self.inverse_all)
+        self.inversion_button = tk.Button(self.button_frame1, text="Inverse All", command=self.inverse_all)
         self.inversion_button.pack(side=tk.LEFT)
 
         # 5. кнопка паузы
-        self.start_pause_button = tk.Button(self.button_frame, text="Start", command=self.toggle_pause)
+        self.start_pause_button = tk.Button(self.button_frame2, text="Start", command=self.toggle_pause)
         self.start_pause_button.pack(side=tk.LEFT)
 
         # 6. кнопка для запуска нескольких итераций
-        self.iters_run_button = tk.Button(self.button_frame, text="Run w/ iters", command=self.iters_run)
+        self.iters_run_button = tk.Button(self.button_frame2, text="Run with iters", command=self.iters_run)
         self.iters_run_button.pack(side=tk.LEFT)
+
+        # 7. кнопка для запуска нескольких итераций
+        self.randomize_button = tk.Button(self.button_frame1, text="Randomize", command=self.randomize_cells)
+        self.randomize_button.pack(side=tk.LEFT)
 
         # Привязка клика ЛКМ по холсту
         self.canvas.bind("<Button-1>", self.on_canvas_click)
@@ -167,3 +175,10 @@ class GridApp:
 
         self.toggle_pause()
         self.master.after(ITER_TIME * iters_num, self.toggle_pause)
+
+    def randomize_cells(self):
+        """ Функция для задания случайных значений клеткам """
+        for i in range(self.grid_size):
+            for j in range(self.grid_size):
+                self.grid[i][j] = random.choice([0, 1])
+                self.update_square(i, j)
