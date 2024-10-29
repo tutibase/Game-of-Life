@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import simpledialog
 from constants import *
-
+from cellular_automaton import CellularAutomaton
+import copy
 
 class GridApp:
     """ Класс, отвечающий за всю графику в окне master """
@@ -20,6 +21,9 @@ class GridApp:
 
         # Изначально игра на паузе
         self.is_paused = True
+        # Задаем автомат
+        self.auto = CellularAutomaton('00000011010011101100101100010000')
+        #self.auto = CellularAutomaton('10110010101010011111011100011110')
 
         # Создаем виджеты:
         # 1. холст для отрисовки поля
@@ -42,6 +46,10 @@ class GridApp:
         self.start_pause_button = tk.Button(self.button_frame, text="Start", command=self.toggle_pause)
         self.start_pause_button.pack(side=tk.LEFT)
 
+        # 6. кнопка для запуска нескольких итераций
+        self.iters_run_button = tk.Button(self.button_frame, text="Run w/ iters", command=self.iters_run)
+        self.iters_run_button.pack(side=tk.LEFT)
+
         # Привязка клика ЛКМ по холсту
         self.canvas.bind("<Button-1>", self.on_canvas_click)
 
@@ -49,8 +57,8 @@ class GridApp:
         self.canvas_items = []
         self.draw_grid()
 
-        # Запускаем цикл для перекраски первой клетки
-        self.inverse_first_cell()
+        # Запускаем цикл для перекраски клеток
+        self.next_iter()
 
     def draw_grid(self):
         """ Функция перерисовки всего холста """
@@ -117,6 +125,32 @@ class GridApp:
         # Запланировать следующий вызов этой функции через ITER_TIME миллисекунд
         self.master.after(ITER_TIME, self.inverse_first_cell)
 
+    def next_iter(self):
+        """ Функция, перекрашивающая все клетки в соответствии с автоматом """
+        if not self.is_paused:
+            new_grid = copy.deepcopy(self.grid)
+            for i in range(self.grid_size):
+                for j in range(self.grid_size):
+                    # Значения соседей
+                    neighbors_vals = (self.grid[i][j],)
+                    neighbors = CellularAutomaton.neighbors(i, j)
+                    for index, n in enumerate(neighbors):
+                        # Если сосед клетки являются границей сетки, то даем ему значение границы
+                        if n[0] >= self.grid_size or n[0] < 0 or n[1] >= self.grid_size or n[1] < 0:
+                            neighbors_vals += (BORDER_VAL,)
+                        else:
+                            neighbors_vals += (self.grid[neighbors[index][0]][neighbors[index][1]],)
+
+                    new_grid[i][j] = self.auto.bin_func(*neighbors_vals)
+
+            self.grid = new_grid
+            for i in range(self.grid_size):
+                for j in range(self.grid_size):
+                    self.update_square(i, j)
+
+        # Запланировать следующий вызов этой функции через ITER_TIME миллисекунд
+        self.master.after(ITER_TIME, self.next_iter)
+
     def toggle_pause(self):
         """ Функция, которая приостанавливает и возобновляет игру """
         # Меняем состояние на "пауза/возобновление"
@@ -126,3 +160,10 @@ class GridApp:
             self.start_pause_button.config(text="Start")
         else:
             self.start_pause_button.config(text="Pause")
+
+    def iters_run(self):
+        """ Функция запуска нескольких итераций игры """
+        iters_num = simpledialog.askinteger("Iters num", "Enter the number of iterations:", initialvalue=10)
+
+        self.toggle_pause()
+        self.master.after(ITER_TIME * iters_num, self.toggle_pause)
